@@ -1,13 +1,11 @@
-# Othello - Reversi Game 🎮
+# Othello - Reversi Game
 
 A Python-based implementation of the classic **Othello (Reversi)** board game.  
 This project includes:
 - An AI opponent built from scratch.
 - A GUI integration for a more interactive experience.
 
----
-
-## ✨ Features
+## Features
 - Play against an AI opponent.
 - Supports and **GUI mode**.
 - Implements full Othello rules (valid moves, flipping discs, win conditions).
@@ -22,7 +20,7 @@ You can tweak difficulty by adjusting search depth or heuristics
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.8+
