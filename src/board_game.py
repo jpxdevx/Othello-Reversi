@@ -13,10 +13,10 @@ line_thickness = 0.05
 
 def board():
     # Borders
-    top    = Entity(model='cube', scale=(grid + border*2, border, 1), position=(0,  offset, 0), color=color.black)
-    bottom = Entity(model='cube', scale=(grid + border*2, border, 1), position=(0, -offset, 0), color=color.black)
-    left   = Entity(model='cube', scale=(border, grid, 1),position=(-offset, 0, 0), color=color.black)
-    right  = Entity(model='cube', scale=(border, grid, 1),position=( offset, 0, 0), color=color.black)
+    top    = Entity(model='cube', scale=(grid + border*2, border, 1), position=(0,  offset, 0),texture="textures/board_texture.jpg", texture_scale=(grid + border*2, border))
+    bottom = Entity(model='cube', scale=(grid + border*2, border, 1), position=(0, -offset, 0),texture="textures/board_texture.jpg", texture_scale=(grid + border*2, border))
+    left   = Entity(model='cube', scale=(border, grid, 1),position=(-offset, 0, 0),texture="textures/board_texture.jpg", texture_scale=(border, grid))
+    right  = Entity(model='cube', scale=(border, grid, 1),position=( offset, 0, 0),texture="textures/board_texture.jpg", texture_scale=(border, grid))
 
     # Main board
     Entity(model='cube', scale=(grid, grid, 0.2), position=(0, 0, 0), color=rgb(0, 128, 0))
@@ -54,11 +54,10 @@ def draw_piece(x, y, color):
     Entity(model=Cylinder(resolution = 64), scale=(0.9,0.3,0.9), position=(x*tile, y*tile, -0.3), color=color).rotation_x = 90 
   
 def main():
-    show_menu = True
-    if show_menu:
-        show_menu = menu.main_menu(show_menu)
-    else:
-        board()
+
+    menu.main_menu()
+
+        
     camera.position = (0, -15, -15)
     camera.rotation = (-45, 0, 0)
     camera.fov = 45
