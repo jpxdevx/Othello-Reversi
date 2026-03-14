@@ -146,15 +146,15 @@ def generate_valid_moves(rownum, colnum, opponent):
     bottom_left_valid(rownum, colnum, opponent)
     bottom_right_valid(rownum, colnum, opponent)
 
-def display_valid_moves(playing_token, opponent_token):
+def fetch_token_valid_moves(pl_tkn, opp_tkn):
     global game_over
     valid.clear()
 
     for i in range(rows):
         for j in range(columns):
-            if board[i][j] == playing_token:
-                generate_valid_moves(i, j, opponent_token)
-    
+            if board[i][j] == pl_tkn:
+                generate_valid_moves(i, j, opp_tkn)
+
     unique_valid = []
 
     for move in valid:
@@ -162,11 +162,12 @@ def display_valid_moves(playing_token, opponent_token):
             unique_valid.append(move)
             
     valid[:] = unique_valid
-    
-    print(f"\nValid moves: {valid}")
 
     if not valid:
         pass 
+
+def display_valid_moves():
+    print(f"\nValid moves: {valid}")
 
 def flip_top(rw, col, tkn, opponent):
     if rw > 1:

@@ -27,20 +27,17 @@ def evaluate_board():
     return score
 
 def get_all_valid_moves(player):
-    gl.valid.clear()
-    gl.display_valid_moves(player, -player)
+    gl.fetch_token_valid_moves(player, -player)
+    return [m[:] for m in gl.valid]
 
     return [m[:] for m in gl.valid]
 
 def minimax(depth, alpha, beta, maximizing):
-    if depth == 0:
-        return evaluate_board()
-    
     current_player = -1 if maximizing else 1
 
     valid_moves = get_all_valid_moves(current_player)
     
-    if not valid_moves:
+    if depth == 0 or not valid_moves:
         return evaluate_board()
     
     original_board = copy.deepcopy(gl.board)
@@ -50,61 +47,73 @@ def minimax(depth, alpha, beta, maximizing):
 
         for move in valid_moves:
             r, c = move[0]-1, move[1]-1
-
             gl.make_move(r, c, -1)
+
             eval_score = minimax(depth-1, alpha, beta, False)
-            
+
             gl.board = copy.deepcopy(original_board)
             
             max_eval = max(max_eval, eval_score)
             alpha = max(alpha, eval_score)
 
-            if beta <= alpha: 
+            if beta <= alpha:
                 break
-
         return max_eval
-    
+
     else:
         min_eval = float('inf')
 
         for move in valid_moves:
             r, c = move[0]-1, move[1]-1
-
             gl.make_move(r, c, 1)
+
             eval_score = minimax(depth-1, alpha, beta, True)
-            
+
             gl.board = copy.deepcopy(original_board)
             
             min_eval = min(min_eval, eval_score)
             beta = min(beta, eval_score)
 
-            if beta <= alpha: 
+            if beta <= alpha:
                 break
-            
+
         return min_eval
 
-def get_best_move():
+def get_best_move(difficulty):
     valid_moves = get_all_valid_moves(-1)
     
     if not valid_moves:
         return None
     
+    if difficulty == 1:
+        if random.random() < 0.5:
+            move = random.choice(valid_moves)
+            return (move[0]-1, move[1]-1)
+
+        depth = 2
+
+    elif difficulty == 2:
+        depth = 4
+
+    else:
+        depth = 6
+    
     best_score = float('-inf')
     best_move = None
-    depth = 3
-    
     original_board = copy.deepcopy(gl.board)
-    
+
     for move in valid_moves:
         r, c = move[0]-1, move[1]-1
         gl.make_move(r, c, -1)
 
         board_score = minimax(depth-1, float('-inf'), float('inf'), False)
-        
+
         gl.board = copy.deepcopy(original_board)
         
         if board_score > best_score:
             best_score = board_score
             best_move = (r, c)
             
+    gl.fetch_token_valid_moves(-1, 1)
+    
     return best_move
