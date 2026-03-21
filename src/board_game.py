@@ -1,5 +1,5 @@
 from ursina import *
-import menu
+import menu,game_logic,ai
 app = Ursina()
 
 DirectionalLight(rotation=(45, -45), shadows=True)
@@ -11,11 +11,93 @@ offset = half + border / 2  # 4.1
 tile = grid / 8   #1 for 64 tiles
 line_thickness = 0.05
 tile_buttons = {}
+pieces = {}
 
 def update():
     menu.update()
 
-def board():
+def to_board_coords(x, y):
+    col = x + 4
+    row = 3 - y
+    return row, col
+
+def to_3d_coords(row, col):
+    x = col - 4
+    y = 3 - row
+    return x, y
+
+
+def board(difficulty = 1):
+
+    game_logic.board_init()
+    game_logic.fetch_token_valid_moves(1, -1)
+
+    #need to do the ai UI update
+
+    def handle_player_move(x, y):
+
+        #handle the players move
+        row,col = to_board_coords(x, y)
+        old_board = [row[:] for row in game_logic.board]
+        move_made = game_logic.make_move(row, col, 1)
+
+        if not move_made:
+            invalid = "Invalid position!"
+            des = Text(invalid, parent=camera.ui, position=(0, 0.4), origin=(0, 0), color=color.red, scale=2,font='VeraMono.ttf')
+            des.animate('color', color.rgba(1, 0, 0, 0), duration=2)
+            destroy(des, delay=2)
+            return
+        
+        
+        place_piece(x, y, color.black)
+        flip_pieces(old_board, (x, y))
+        #do_ai_turn()
+
+    def animate_flip(entity, to_black, delay=0):
+        #animate flip
+        #need to fix the updawrd z shift
+        target = entity.rotation_x + 180 
+        entity.animate('rotation_x', target, duration=0.4, delay=delay, curve=curve.in_out_sine)
+        entity.is_black = to_black
+
+    def flip_pieces(old_board,placed):
+        #for the pieces that needs flipping
+        flip_count = 0
+        for r in range(8):
+            for c in range(8):
+                if game_logic.board[r][c] != old_board[r][c]:
+                    x, y = to_3d_coords(r, c)
+                    if (x,y) == placed:
+                        continue
+                    if (x, y) in pieces:
+                        to_black = game_logic.board[r][c] == 1
+                        animate_flip(pieces[(x, y)], to_black , delay=flip_count * 0.15)
+                        flip_count += 1
+
+
+    def place_piece(x, y, starting_color):
+        
+        p = Entity(parent=board_container,scale=(0.85, 0.3, 0.85),position=((x + 0.5)*tile, (y + 0.5)*tile, -0.3),rotation_x=90)  
+
+        #top half and bottom half - swap colors based on starting color
+        if starting_color == color.black:
+            top_col = color.black
+            bot_col = color.gray
+        else:
+            top_col = color.gray
+            bot_col = color.black
+
+        top = Entity(parent=p, model=Cylinder(resolution=64), scale=(1, 0.5, 1), color=top_col, y=-0.25)
+        bot = Entity(parent=p, model=Cylinder(resolution=64), scale=(1, 0.5, 1), color=bot_col, y=0.25)
+
+        p.top = top
+        p.bot = bot
+        p.is_black = (starting_color == color.black)
+
+        pieces[(x, y)] = p
+        if (x, y) in tile_buttons:
+            tile_buttons[(x, y)].enabled = False
+    
     
     back_button = Button(text="Back", parent=camera.ui, position=(-0.45, 0.4, -0.1), scale=(0.1, 0.05), color=color.orange, highlight_color=color.red, text_size=2.4, on_click=menu.back_to_menu)
     # Borders
@@ -49,11 +131,9 @@ def board():
         Entity(parent = board_container,model=Cylinder(resolution = 64), scale=(0.3,0.2,0.3), position=(pos[0], pos[1], -0.2), color=color.black).rotation_x = 90  
     
     #center pieces --> permanent
-    Entity(parent = board_container,model=Cylinder(resolution = 64), scale=(0.85,0.3,0.85), position=(0.5,0.5,-0.3), color=color.black).rotation_x = 90
-    Entity(parent = board_container,model=Cylinder(resolution = 64), scale=(0.85,0.3,0.85), position=(-0.5,-0.5,-0.3), color=color.black).rotation_x = 90
-    Entity(parent = board_container,model=Cylinder(resolution = 64), scale=(0.85,0.3,0.85), position=(0.5,-0.5,-0.3), color=color.gray).rotation_x = 90
-    Entity(parent = board_container,model=Cylinder(resolution = 64), scale=(0.8,0.3,0.85), position=(-0.5,0.5,-0.3), color=color.gray).rotation_x = 90
-
+    center_pieces = [((0, 0),color.black), ((0, -1),color.gray), ((-1, 0),color.gray), ((-1, -1),color.black)]
+    for pos, col in center_pieces:
+        place_piece(pos[0], pos[1], col)
 
     #buttons for the posibilities of placing pieces
     for x in range(-4, 4):
@@ -62,17 +142,11 @@ def board():
                 continue
         
             cx, cy = x, y
-            btn = Button(parent=board_container,model=Cylinder(resolution=64),scale=(0.85, 0.3, 0.85),position=((x + 0.5)*tile, (y + 0.5)*tile, -0.3),color=color.clear,highlight_color=color.light_gray,rotation_x = 90,on_click=lambda cx=cx, cy=cy: draw_piece(cx, cy, color.black))
+            btn = Button(parent=board_container,model=Cylinder(resolution=64),scale=(0.85, 0.3, 0.85),position=((x + 0.5)*tile, (y + 0.5)*tile, -0.3),color=color.clear,highlight_color=color.light_gray,rotation_x = 90,on_click=lambda cx=cx, cy=cy: handle_player_move(cx, cy))
         
             tile_buttons[(x, y)] = btn
 
-
-    def draw_piece(x, y, color):
-        if (x, y) in tile_buttons:
-            tile_buttons[(x, y)].enabled = False
-        Entity(parent = board_container,model=Cylinder(resolution = 64), scale=(0.85,0.3,0.85), position=((x + 0.5)*tile, (y + 0.5)*tile, -0.3), color=color).rotation_x = 90 
     
-  
 def main():
     EditorCamera()
     camera.position = (0, -20, 10)
