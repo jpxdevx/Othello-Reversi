@@ -31,7 +31,8 @@ def view_rules():
     i=1
     for rule in rules:
         c = color.white if rule.startswith("  ") else color.black
-        Text(rule, parent=rules_container,position=(-0.6, 0.3 - i * 0.038, 0),scale=1.0, color=c)
+        Text(rule, parent=rules_container,position=(-0.6, 0.3 - i * 0.038, -1),scale=1.0, color=c)
         i+=1
-
+    
+    tutorial = Animation("textures/tutorial_frames/frame_",fps=15,lo0p=True,parent=rules_container,position=(0.4,0,-4),scale=(0.6,0.4))
     back = Button(text="Back", parent=rules_container,position=(-0.45, 0.43, -0.1), scale=(0.1, 0.05),color=color.orange, highlight_color=color.red,text_size=2.4, on_click=menu.back_to_menu)

@@ -1,7 +1,7 @@
 from ursina import *
 import menu,game_logic,ai
 app = Ursina()
-
+difficulty = 1
 DirectionalLight(rotation=(45, -45), shadows=True)
 AmbientLight(color=color.rgba(80, 80, 80, 0.5))
 border = 0.2
@@ -26,13 +26,69 @@ def to_3d_coords(row, col):
     y = 3 - row
     return x, y
 
+def invalid():
+    invalid = "Invalid position!"
+    des = Text(invalid, parent=camera.ui, position=(0, 0.4), origin=(0, 0), color=color.red, scale=2,font='VeraMono.ttf')
+    des.animate('color', color.rgba(1, 0, 0, 0), duration=2)
+    destroy(des, delay=2)
 
-def board(difficulty = 1):
+def no_moves():
+    no_moves = "No Valid Moves Available!"
+    des = Text(no_moves, parent=camera.ui, position=(0, 0.4), origin=(0, 0), color=color.red, scale=2,font='VeraMono.ttf')
+    des.animate('color', color.rgba(1, 0, 0, 0), duration=2)
+    destroy(des, delay=2)
+
+def board():
 
     game_logic.board_init()
     game_logic.fetch_token_valid_moves(1, -1)
 
-    #need to do the ai UI update
+    def show_game_over():
+        black_score = sum(row.count(1) for row in game_logic.board)
+        white_score = sum(row.count(-1) for row in game_logic.board)
+
+        if black_score > white_score:
+            result = f"You Win!  {black_score} - {white_score}"
+            col = color.green
+        elif white_score > black_score:
+            result = f"AI Wins!  {black_score} - {white_score}"
+            col = color.red
+        else:
+            result = f"Tie!  {black_score} - {white_score}"
+            col = color.yellow
+
+        Button(disabled=True,position=(0,0,-3),scale=(4,4))
+        Text(result, parent=camera.ui, position=(0, 0,-4),origin=(0, 0), color=col, scale=2, font='VeraMono.ttf')
+
+    #AI to play
+    def AI_turn():
+        game_logic.fetch_token_valid_moves(-1,1)
+        if not game_logic.valid:
+            no_moves()
+            game_logic.fetch_token_valid_moves(-1,1)
+            if not game_logic.valid:
+                # player has no moves either
+                game_logic.game_over = True
+                show_game_over()
+            return
+        
+        old_board = [r[:] for r in game_logic.board]
+        ai_move = ai.get_best_move(difficulty)
+
+        if ai_move:
+            r,c = ai_move
+            game_logic.make_move(r,c,-1)
+
+            #for 3d board
+            ux,uy = to_3d_coords(r,c)
+            place_piece(ux,uy,color.gray)
+            flip_pieces(old_board,(ux,uy))
+           
+        game_logic.fetch_token_valid_moves(1, -1)
+        if not game_logic.valid:
+            # player has no moves either
+            game_logic.game_over = True
+            show_game_over()
 
     def handle_player_move(x, y):
 
@@ -42,23 +98,27 @@ def board(difficulty = 1):
         move_made = game_logic.make_move(row, col, 1)
 
         if not move_made:
-            invalid = "Invalid position!"
-            des = Text(invalid, parent=camera.ui, position=(0, 0.4), origin=(0, 0), color=color.red, scale=2,font='VeraMono.ttf')
-            des.animate('color', color.rgba(1, 0, 0, 0), duration=2)
-            destroy(des, delay=2)
+            invalid()
             return
         
-        
         place_piece(x, y, color.black)
-        flip_pieces(old_board, (x, y))
-        #do_ai_turn()
+        animation_dur = flip_pieces(old_board, (x, y))
+        #adding a 0.8 sec pause for the Ai to start
+        total_delay = animation_dur + 0.8
+        invoke(AI_turn,delay = total_delay)
 
     def animate_flip(entity, to_black, delay=0):
         #animate flip
-        #need to fix the updawrd z shift
+        if not hasattr(entity, 'flip_count'):
+            entity.flip_count = 0
+        entity.flip_count += 1
+        z_correction = -0.15 if entity.flip_count % 2 == 0 else 0.15
         target = entity.rotation_x + 180 
+        old_pos = entity.z + z_correction
         entity.animate('rotation_x', target, duration=0.4, delay=delay, curve=curve.in_out_sine)
         entity.is_black = to_black
+        entity.animate('z',old_pos, duration=0.4, delay=delay)
+        
 
     def flip_pieces(old_board,placed):
         #for the pieces that needs flipping
@@ -71,14 +131,23 @@ def board(difficulty = 1):
                         continue
                     if (x, y) in pieces:
                         to_black = game_logic.board[r][c] == 1
+                        
                         animate_flip(pieces[(x, y)], to_black , delay=flip_count * 0.15)
                         flip_count += 1
+        
+        if flip_count == 0:
+            return 0
+        
+        #last piece starts flipping at (flip_count - 1) * 0.15
+        #it takes 0.4 seconds to finish its rotation       
+        total_time = ((flip_count - 1)* 0.15) + 0.4
+        return total_time
 
 
     def place_piece(x, y, starting_color):
-        
-        p = Entity(parent=board_container,scale=(0.85, 0.3, 0.85),position=((x + 0.5)*tile, (y + 0.5)*tile, -0.3),rotation_x=90)  
-
+        pivot = Entity(parent=board_container,position=((x + 0.5)*tile, (y + 0.5)*tile, -0.3))
+        p = Entity(parent=pivot,scale=(0.85, 0.3, 0.85),rotation_x=90)  
+        p.origin = (0,0,0)
         #top half and bottom half - swap colors based on starting color
         if starting_color == color.black:
             top_col = color.black
@@ -87,14 +156,14 @@ def board(difficulty = 1):
             top_col = color.gray
             bot_col = color.black
 
-        top = Entity(parent=p, model=Cylinder(resolution=64), scale=(1, 0.5, 1), color=top_col, y=-0.25)
-        bot = Entity(parent=p, model=Cylinder(resolution=64), scale=(1, 0.5, 1), color=bot_col, y=0.25)
-
+        top = Entity(parent=p, model=Cylinder(resolution=64), scale=(1, 0.5, 1), color=top_col,y=-0.25)
+        bot = Entity(parent=p, model=Cylinder(resolution=64), scale=(1, 0.5, 1), color=bot_col,y=0.25)
+    
         p.top = top
         p.bot = bot
         p.is_black = (starting_color == color.black)
-
-        pieces[(x, y)] = p
+        
+        pieces[(x, y)] = pivot
         if (x, y) in tile_buttons:
             tile_buttons[(x, y)].enabled = False
     
