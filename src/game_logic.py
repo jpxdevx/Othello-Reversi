@@ -259,7 +259,7 @@ def flip_bottom_left(rw, col, tkn, opponent):
                 board[curr_x][curr_y] = tkn
             
                 curr_x -= 1
-                curr_y -= 1
+                curr_y += 1
 
 def flip_bottom_right(rw, col, tkn, opponent):
     if rw < 6 and col < 6:
