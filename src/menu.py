@@ -1,9 +1,39 @@
 from ursina import *
+import game_logic
 import board_game,rules_display,creators_display
 
 button_holder, cloud1, cloud2, cloud3 = None, None, None, None
+menu_music = None
+game_music = None
+
+def play_menu_music():
+    global menu_music, game_music
+
+    if game_music:
+        game_music.stop()
+
+    if menu_music and menu_music.playing:
+        return
+
+    menu_music = Audio("textures/menu_music.ogg",loop=True,volume=1)
+
+    menu_music.play()
+
+def play_game_music():
+    global menu_music, game_music
+
+    if menu_music:
+        menu_music.stop()
+
+    if game_music and game_music.playing:
+        return
+
+    game_music = Audio("textures/game_background.ogg",loop=True,volume=3)
+
+    game_music.play()
 
 def update():
+    
     if button_holder:
         button_holder.rotation_z = math.sin(time.time() * 1.2) * 3
     
@@ -20,6 +50,14 @@ def update():
 def clear_scene():
     global button_holder, cloud1, cloud2, cloud3
     button_holder, cloud1, cloud2, cloud3 = None, None, None, None
+
+    if board_game.temp_score:
+        board_game.temp_score.disable()
+        board_game.temp_score = None
+
+    board_game.game_started = False
+    game_logic.board = []
+
     for e in scene.entities[:]:
         if e is not camera and not isinstance(e, EditorCamera):
             destroy(e)
@@ -29,9 +67,9 @@ def back_to_menu():
         main_menu()
 
 
-
 def main_menu():
-    
+
+    play_menu_music()
     global button_holder,cloud1, cloud2, cloud3
 
     def start_game():

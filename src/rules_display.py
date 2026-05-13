@@ -2,9 +2,9 @@ from ursina import *
 import menu
 
 def view_rules():
-    
+    menu.play_menu_music()
     rules_container = Entity(parent=camera.ui)
-    Entity(parent=rules_container, model="quad", scale=(1.8, 1), texture="textures/rules_background1.png", position=(0, 0, 1))
+    Entity(parent=rules_container, model="quad", scale=(1.8, 1), texture="textures/rules.jpg", position=(0, 0, 1))
 
     Text("RULES", parent=rules_container, position=(-0.38, 0.38, 0),scale=2.2, color=color.orange, font='VeraMono.ttf')
     Entity(parent=rules_container, model="quad", scale=(0.65, 0.005),color=color.orange, position=(-0.3, 0.33, 0))
@@ -30,9 +30,9 @@ def view_rules():
     ]
     i=1
     for rule in rules:
-        c = color.white if rule.startswith("  ") else color.black
+        c = color.blue if rule.startswith("  ") else color.black
         Text(rule, parent=rules_container,position=(-0.6, 0.3 - i * 0.038, -1),scale=1.0, color=c)
         i+=1
     
     tutorial = Animation("textures/tutorial_frames/frame_",fps=15,lo0p=True,parent=rules_container,position=(0.4,0,-4),scale=(0.6,0.4))
-    back = Button(text="Back", parent=rules_container,position=(-0.45, 0.43, -0.1), scale=(0.1, 0.05),color=color.orange, highlight_color=color.red,text_size=2.4, on_click=menu.back_to_menu)
+    back_button = Button(texture="textures/back.png", parent=camera.ui, position=(-0.8, 0.44, -0.1), scale=(0.07, 0.07), color=color.white, text_size=2.4, on_click=menu.back_to_menu)

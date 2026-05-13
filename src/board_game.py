@@ -1,7 +1,19 @@
 from ursina import *
 import menu,game_logic,ai
-app = Ursina()
+
+app = Ursina(title = "Othello -A Reversi Game")
+
 difficulty = 1
+
+window.icon = "textures/ursina.ico"
+window.entity_counter.enabled = False
+window.collider_counter.enabled = False
+window.fps_counter.enabled = False
+window.exit_button.enabled = False
+
+error = Audio("textures/error.mp3", autoplay=False)
+background_music = None
+
 DirectionalLight(rotation=(45, -45), shadows=True)
 AmbientLight(color=color.rgba(80, 80, 80, 0.5))
 border = 0.2
@@ -14,8 +26,34 @@ tile_buttons = {}
 pieces = {}
 player_turn = True
 total_delay = 0
+temp_score = None
+
 
 def update():
+    global temp_score
+
+    if game_logic.board :
+
+        black_score = sum(row.count(1) for row in game_logic.board)
+        white_score = sum(row.count(-1) for row in game_logic.board)
+
+        try :
+            if temp_score is None or not temp_score.enabled:
+                raise Exception
+            
+            temp_score.white.text = f"{white_score}"
+            temp_score.black.text = f"{black_score}"
+
+        except Exception:
+            temp_score=Entity()
+
+            white_box = Entity(parent=camera.ui,model="quad",texture="textures/white_score_card.png",position=(0.3, 0.35, -2),scale=(0.5,0.3),color=color.white)
+            vs = Entity(parent=camera.ui,model="quad",texture="textures/vs.png",position=(-0, 0.35, -2),scale=(0.1,0.1),color=color.white)
+            black_box = Entity(parent=camera.ui,model="quad",texture="textures/black_score_card.png",position=(-0.26, 0.35, -2),scale=(0.5,0.3),color=color.white)
+            temp_score.white = Text(text=f"{white_score}",parent=white_box,position=(-0.25, -0.01, -2.2),origin=(0, 0),color=color.black,scale=(7,10),font='VeraMono.ttf')
+            temp_score.black = Text(text=f"{black_score}",parent=black_box,position=(0.17, 0.01, -2.2),origin=(0, 0),color=color.white,scale=(7,10),font='VeraMono.ttf')
+            
+
     menu.update()
 
 def to_board_coords(x, y):
@@ -29,80 +67,94 @@ def to_3d_coords(row, col):
     return x, y
 
 def invalid():
+    error.play()
     invalid = "Invalid position!"
-    des = Text(invalid, parent=camera.ui, position=(0, 0.4), origin=(0, 0), color=color.red, scale=2,font='VeraMono.ttf')
+    des = Text(invalid, parent=camera.ui, position=(0, 0.45), origin=(0, 0), color=color.red, scale=2,font='VeraMono.ttf')
     des.animate('color', color.rgba(1, 0, 0, 0), duration=2)
     destroy(des, delay=2)
 
 def no_moves():
-    no_moves = "No Valid Moves Available!"
-    des = Text(no_moves, parent=camera.ui, position=(0, 0.4), origin=(0, 0), color=color.red, scale=2,font='VeraMono.ttf')
-    des.animate('color', color.rgba(1, 0, 0, 0), duration=2)
-    destroy(des, delay=2)
+    if game_logic.game_over:
+        return
+    else: 
+        error.play()
+        no_moves = "No Valid Moves Available!"
+        des = Text(no_moves, parent=camera.ui, position=(0, 0.45), origin=(0, 0), color=color.red, scale=2,font='VeraMono.ttf')
+        des.animate('color', color.rgba(1, 0, 0, 0), duration=2)
+        destroy(des, delay=2)
 
 def board():
+    
+    place = Audio("textures/placing.wav", autoplay=False)
+    flip = Audio("textures/flip.wav", autoplay=False)
+    win = Audio("textures/win.mp3", autoplay=False)
+    loss = Audio("textures/loss.mp3", autoplay=False)
+    draw = Audio("textures/draw.mp3", autoplay=False)
+    menu.play_game_music()
 
     game_logic.board_init()
     game_logic.fetch_token_valid_moves(1, -1)
 
     def show_game_over():
+        menu.game_music.stop()
         black_score = sum(row.count(1) for row in game_logic.board)
         white_score = sum(row.count(-1) for row in game_logic.board)
         display = Button(disabled=True,position=(0,0,-1.5),scale=(0.3,0.2))
         if black_score > white_score:
-            result = f"You Win!\n{Entity(model="circle",parent=display,color=color.black, position=(-0.25,0,-2),scale=(0.2,0.2))}   {Entity(model="circle",parent=display,color=color.white,position=(0.25,0,-2),scale=(0.2,0.2))}\n{black_score} - {white_score}"
+            win.play()
+            result = f"You Win!\n\n{black_score} - {white_score}"
             col = color.green
         elif white_score > black_score:
-            result = f"AI Wins!\n{Entity(model="circle",parent=display,color=color.black,position=(-0.25,0,-2),scale=(0.2,0.2))}   {Entity(model = "circle",parent=display,color=color.white,position=(0.25,0,-2),scale=(0.2,0.2))}\n{black_score} - {white_score}"
+            loss.play()
+            result = f"AI Wins!\n\n{black_score} - {white_score}"
             col = color.red
         else:
-            result = f"Tie!\n{Entity(model = "circle",parent=display,color=color.black,position=(-0.25,0,-2),scale=(0.2,0.2))}   {Entity(model = "circle",parent=display,color=color.white,position=(0.25,0,-2),scale=(0.2,0.2))}\n{black_score} - {white_score}"
+            draw.play()
+            result = f"Tie!\n\n{black_score} - {white_score}"
             col = color.yellow
 
         
         Text(result, parent=camera.ui, position=(0, 0,-2),origin=(0, 0), color=col, scale=2, font='VeraMono.ttf')
+        main_menu = Button(text="Menu", parent=camera.ui, position=(0, -0.3, -2), scale=(0.2, 0.1), color=color.orange, highlight_color=color.red, text_size=2.4, on_click= menu.back_to_menu)
 
     #AI to play
     def AI_turn():
-        global player_turn, total_delay
+        global player_turn
         player_turn = False
-        game_logic.fetch_token_valid_moves(-1,1)
-        if not game_logic.valid:
-            no_moves()
-            game_logic.fetch_token_valid_moves(1,-1)
-            if not game_logic.valid:
-                # player has no moves either
-                game_logic.game_over = True
-                show_game_over()
-            else:
-                player_turn = True
-            return
         
+        game_logic.fetch_token_valid_moves(-1, 1)
+        if not game_logic.valid:
+            return
+
         old_board = [r[:] for r in game_logic.board]
         ai_move = ai.get_best_move(difficulty)
 
         if ai_move:
-            r,c = ai_move
-            game_logic.make_move(r,c,-1)
+            r, c = ai_move
+            game_logic.make_move(r, c, -1)
 
-            #for 3d board
-            ux,uy = to_3d_coords(r,c)
-            place_piece(ux,uy,color.gray)
-            flip_pieces(old_board,(ux,uy))
-        #i want to add a delay before the player's turn
+            ux, uy = to_3d_coords(r, c)
+            place_piece(ux, uy, color.gray)
+            flip_pieces(old_board, (ux, uy))
+
+        invoke(prepare_player_turn, delay=1)
+
+    def prepare_player_turn():
+        global player_turn
         player_turn = True
-        #checking for players move 
+        
+        # Check for player's moves after the delay
         game_logic.fetch_token_valid_moves(1, -1)
+        
         if not game_logic.valid:
-            no_moves()
-            #AI has no moves either
             game_logic.fetch_token_valid_moves(-1, 1)
             if not game_logic.valid:
                 game_logic.game_over = True
                 show_game_over()
             else:
-                player_turn = False
-                invoke(AI_turn,delay=0.5)
+                # If player has no moves but AI does, run AI again
+                no_moves()
+                invoke(AI_turn, delay=0.5)
 
     def handle_player_move(x, y):
 
@@ -141,9 +193,13 @@ def board():
 
     def animate_flip(entity, to_black, delay=0):
         #animate flip
+        
         if not hasattr(entity, 'flip_count'):
             entity.flip_count = 0
         entity.flip_count += 1
+
+        invoke(flip.play, delay=delay)
+
         z_correction = -0.15 if entity.flip_count % 2 == 0 else 0.15
         target = entity.rotation_x + 180 
         old_pos = entity.z + z_correction
@@ -177,6 +233,7 @@ def board():
 
 
     def place_piece(x, y, starting_color):
+        
         pivot = Entity(parent=board_container,position=((x + 0.5)*tile, (y + 0.5)*tile, -0.3))
         p = Entity(parent=pivot,scale=(0.85, 0.3, 0.85),rotation_x=90)  
         p.origin = (0,0,0)
@@ -197,11 +254,14 @@ def board():
         
         pieces[(x, y)] = pivot
         if (x, y) in tile_buttons:
+            place.play()
             tile_buttons[(x, y)].enabled = False
     
     
-    back_button = Button(text="Back", parent=camera.ui, position=(-0.45, 0.4, -0.1), scale=(0.1, 0.05), color=color.orange, highlight_color=color.red, text_size=2.4, on_click=menu.back_to_menu)
+    back_button = Button(texture="textures/back.png", parent=camera.ui, position=(-0.8, 0.44, -0.1), scale=(0.07, 0.07), color=color.white, text_size=2.4, on_click=menu.back_to_menu)
+    
     # Borders
+    
     board_container = Entity()
     top    = Entity(parent = board_container,model='cube', scale=(grid + border*2, border, 1), position=(0,  offset, 0),texture="textures/board_texture.jpg", texture_scale=(grid + border*2, border))
     bottom = Entity(parent = board_container,model='cube', scale=(grid + border*2, border, 1), position=(0, -offset, 0),texture="textures/board_texture.jpg", texture_scale=(grid + border*2, border))
@@ -209,7 +269,9 @@ def board():
     right  = Entity(parent = board_container,model='cube', scale=(border, grid, 1),position=( offset, 0, 0),texture="textures/board_texture.jpg", texture_scale=(border, grid))
 
     # Main board
-    Entity(parent = board_container,model='cube', scale=(grid, grid, 0.2), position=(0, 0, 0), color="#1F6040")
+    
+    main_board = Entity(parent = board_container,model='cube', scale=(grid, grid, 0.2), position=(0, 0, 0), color="#1F6040")
+    
     thick_lines = 0
     # Vertical and horizontal lines
     for i in range(-4, 5):
@@ -249,8 +311,10 @@ def board():
 
     
 def main():
+    
+    window.color = color.rgb(0.12, 0.12, 0.12)
     EditorCamera()
-    camera.position = (0, -20, 10)
+    camera.position = (0, -19, 10)
     camera.rotation = (-45, 0, 0)
     camera.fov = 35
     menu.main_menu()
