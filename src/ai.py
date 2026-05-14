@@ -93,10 +93,10 @@ def get_best_move(difficulty):
         depth = 2
 
     elif difficulty == 2:
-        depth = 4
+        depth = 3
 
     else:
-        depth = 6
+        depth = 4
     
     best_score = float('-inf')
     best_move = None

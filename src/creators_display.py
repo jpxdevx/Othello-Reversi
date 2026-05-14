@@ -1,5 +1,11 @@
 from ursina import *
+import webbrowser
 import menu
+def view_creator_1():
+    webbrowser.open("https://www.linkedin.com/in/jp-devx/")
+def view_creator_2():
+    webbrowser.open("https://www.linkedin.com/in/koushik-sharma-656820325/")
+
 def view_creators():
 
     menu.play_menu_music()
@@ -13,6 +19,6 @@ def view_creators():
     image_box2 = Entity(texture="textures/Koushik.jpeg",model="quad",parent=creators_container,position=(0.3,0.05,0),scale=(0.4,0.45),color=color.white)
     name1 = "John Paul Fernandes"
     name2 = "Koushik Sharma"
-    Text(name1,color=color.rgb(255,255,255),parent=creators_container,position=(-0.45,-0.2,0),font='VeraMono.ttf')
-    Text(name2,color=color.rgb(255,255,255),parent=creators_container,position=(0.2,-0.2,0),font='VeraMono.ttf')
+    Button(model="quad", parent=creators_container, position=(-0.3, -0.22, 0), scale=(0.4, 0.1), color=color.gray, text=name1, on_click=view_creator_1)
+    Button(model="quad", parent=creators_container, position=(0.3, -0.22, 0), scale=(0.4, 0.1), color=color.gray, text=name2, on_click=view_creator_2)
     back_button = Button(texture="textures/back.png", parent=camera.ui, position=(-0.8, 0.44, -0.1), scale=(0.07, 0.07), color=color.white, text_size=2.4, on_click=menu.back_to_menu)
