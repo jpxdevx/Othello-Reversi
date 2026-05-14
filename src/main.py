@@ -1,8 +1,24 @@
 import game_logic as gl
 import ai
 
-difficulty = int(input("Choose you difficulty level\n1. Easy\n2. Medium\n3. Hard\nResponse: "))
+difficulty = 1
 
+def get_difficulty():
+    global difficulty
+
+    while True:
+        try:
+            difficulty = int(input("Choose you difficulty level\n1. Easy\n2. Medium\n3. Hard\nResponse: "))
+
+            if difficulty in [1, 2, 3]:
+                break
+            else:
+                print("Please enter a valid option (1, 2, or 3).")
+                
+        except ValueError:
+            print("Invalid input. Please enter a number (1, 2, or 3).")
+
+get_difficulty()
 gl.board_init()
 gl.display_board()
 

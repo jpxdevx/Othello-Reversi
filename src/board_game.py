@@ -85,11 +85,11 @@ def no_moves():
 
 def board():
     
-    place = Audio("textures/placing.wav", autoplay=False)
-    flip = Audio("textures/flip.wav", autoplay=False)
-    win = Audio("textures/win.mp3", autoplay=False)
-    loss = Audio("textures/loss.mp3", autoplay=False)
-    draw = Audio("textures/draw.mp3", autoplay=False)
+    place = Audio("textures/placing.wav", autoplay=False,volume=3)
+    flip = Audio("textures/flip.wav", autoplay=False,volume=3)
+    win = Audio("textures/win.mp3", autoplay=False,volume=3)
+    loss = Audio("textures/loss.mp3", autoplay=False,volume=3)
+    draw = Audio("textures/draw.mp3", autoplay=False,volume=3)
     menu.play_game_music()
 
     game_logic.board_init()
@@ -218,8 +218,7 @@ def board():
                     if (x,y) == placed:
                         continue
                     if (x, y) in pieces:
-                        to_black = game_logic.board[r][c] == 1
-                        
+                        to_black = game_logic.board[r][c] == 1   
                         animate_flip(pieces[(x, y)], to_black , delay=flip_count * 0.15)
                         flip_count += 1
         
