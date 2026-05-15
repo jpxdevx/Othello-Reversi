@@ -30,6 +30,10 @@ You can tweak difficulty by adjusting search depth or heuristics
 
 ---
 
+> **Want to know more?**
+> - Check out the [Design Docs](./docs/design.md) for the math behind the AI.
+> - See the [Usage Guide](./docs/usage.md) for detailed setup instructions.
+
 ## License
 
 This project is licensed under the Apache License 2.0.
@@ -41,3 +45,10 @@ You are free to use, modify, and distribute this project, provided you include p
 
 ## Copyright Disclaimer
 We do not own the rights to this game. All rights belong to the rightful owner. No Copyright Infringement Intended.
+
+## Preview
+
+![Home](./assets/Home.png)
+![Rules](./assets/Rules.png)
+![Creators](./assets/Creators.png)
+![Game Play](./assets/Game_Play.png)
